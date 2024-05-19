@@ -1,4 +1,6 @@
 #include "Meter.h"
+#include <sstream>
+#include <iomanip>
 
 class MeterIME : public Meter {
 public:
@@ -8,6 +10,10 @@ public:
 
     void processContent(const std::vector<uint8_t> &data, const struct wmbusframe &frame) override {
         if(data.size() < 11) return;
+
+        // Decode and print the secondary address
+        std::string secondaryAddress = decodeSecondaryAddress(data);
+        std::cout << "Secondary Address: " << secondaryAddress << std::endl;
 
         for(size_t i = 0; i < data.size(); i += 11) {
             std::vector<uint8_t> field(data.begin() + i, data.begin() + i + 11);
@@ -75,6 +81,16 @@ private:
         int value = (field[7] << 0) | (field[8] << 8) | (field[9] << 16) | (field[10] << 24);
         double scaled_value = value * scale;
         std::cout << description << ": " << scaled_value << " " << unit << std::endl;
+    }
+
+    std::string decodeSecondaryAddress(const std::vector<uint8_t>& data) {
+        std::ostringstream secondaryAddress;
+        secondaryAddress << std::hex << std::uppercase;
+        for (int i = 3; i >= 0; --i) {
+            secondaryAddress << ((data[i] & 0xF0) >> 4);
+            secondaryAddress << (data[i] & 0x0F);
+        }
+        return secondaryAddress.str();
     }
 };
 
